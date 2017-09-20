@@ -14,21 +14,28 @@ func resourceAlert() *schema.Resource {
     Exists: resourceAlertExists,
     Delete: resourceAlertDelete,
     Schema: map[string]*schema.Schema{
-      "Name": {
+      "name": {
 				Type:     schema.TypeString,
 				Required: true,
+        ForceNew: true,
 			},
-			"Description": {
+			"description": {
 				Type:     schema.TypeString,
 				Required: true,
+        ForceNew: true,
+
 			},
-      "Id": {
+      "alert_id": {
 				Type:     schema.TypeInt,
 				Required: true,
+        ForceNew: true,
+
 			},
-      "Enabled": {
+      "enabled": {
 				Type:     schema.TypeBool,
 				Required: true,
+        ForceNew: true,
+
 			},
     },
   }
@@ -43,10 +50,10 @@ func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
   alertInput := swagger.AlertInput{
     Alert: swagger.Alert{
 
-      Name : d.Get("Name").(string),
-      Description : d.Get("Description").(string),
-      Id : d.Get("Id").(int64),
-      Enabled : d.Get("Enabled").(bool),
+      Name : d.Get("name").(string),
+      Description : d.Get("description").(string),
+      Id : d.Get("alert_id").(int64),
+      Enabled : d.Get("enabled").(bool),
 
     },
   }

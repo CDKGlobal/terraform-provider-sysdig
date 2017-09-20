@@ -12,11 +12,6 @@ import (
 func Provider() terraform.ResourceProvider {
   return &schema.Provider{
     Schema: map[string]*schema.Schema{
-      "url": &schema.Schema{
-        Type: schema.TypeString,
-        DefaultFunc: schema.EnvDefaultFunc("API_URL", nil),
-        Description: "API URL",
-      },
       "token": &schema.Schema{
         Type: schema.TypeString,
         Required: true,
@@ -25,7 +20,7 @@ func Provider() terraform.ResourceProvider {
       },
     },
     ResourcesMap: map[string]*schema.Resource{
-      "sysdig_alerts": resourceAlert(),
+      "sysdig_alert": resourceAlert(),
     },
     ConfigureFunc: configureProvider,
   }

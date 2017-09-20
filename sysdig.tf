@@ -4,8 +4,8 @@ provider "sysdig" {
 
 }
 resource "sysdig_alert" "testalert" {
-  Name = "testalert"
-  Description = "this is the provider"
-  Id = 1111
-  Enabled = true
+  name = "testalert"
+  description = "this is the provider"
+  alert_id = 1111
+  enabled = true
 }
