@@ -4,7 +4,7 @@
 //can't load package: package sysdig-provider:
 //provider_test.go:2:1: expected 'package', found 'import'
 //provider_test.go:3:3: expected ';', found 'STRING' "os"
-package main
+package sysdig
 
 import (
 
@@ -12,12 +12,18 @@ import (
 
   "github.com/hashicorp/terraform/helper/schema"
   "github.com/hashicorp/terraform/terraform"
+  "os"
 )
 
 var testAccProvider *schema.Provider
+var testAccProviders map[string]terraform.ResourceProvider
 
 func init() {
   testAccProvider = Provider().(*schema.Provider)
+  testAccProviders = map[string]terraform.ResourceProvider{
+    "sysdig": testAccProvider,
+  }
+
 }
 
 func TestProvider(t *testing.T) {
@@ -31,6 +37,8 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-  // We will use this function later on to make sure our test environment is valid.
-  // For example, you can make sure here that some environment variables are set.
+  if v := os.Getenv("token"); v == "" {
+    t.Fatal("Sysdig token must be set for acceptance tests")
+  }
+
 }
