@@ -1,5 +1,7 @@
-# terraform-provider-sysdig_v1.0.0
+# terraform-provider-sysdig
 Terraform provider for sysdig. Uses the package: https://github.com/CDKGlobal/go-sysdig
+This provider can be extended to implement users, events, dashboards and other resources in sysdig.
+
 
 **Create an alert in Sysdig**
 
