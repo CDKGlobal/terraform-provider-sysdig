@@ -1,9 +1,5 @@
 // File : provider_test.go
 
-// if you dont mention this line, package main , you will get the error below
-//can't load package: package sysdig-provider:
-//provider_test.go:2:1: expected 'package', found 'import'
-//provider_test.go:3:3: expected ';', found 'STRING' "os"
 package sysdig
 
 import (
