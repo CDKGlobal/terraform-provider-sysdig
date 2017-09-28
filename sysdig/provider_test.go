@@ -9,7 +9,6 @@ package sysdig
 import (
 
   "testing"
-
   "github.com/hashicorp/terraform/helper/schema"
   "github.com/hashicorp/terraform/terraform"
   "os"

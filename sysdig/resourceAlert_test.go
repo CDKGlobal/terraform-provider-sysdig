@@ -4,9 +4,8 @@ import (
 
 	"testing"
 	"github.com/hashicorp/terraform/helper/resource"
-
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/jgensler8/go-sysdig"
+	"github.com/CDKGlobal/go-sysdig"
 	"log"
 	"strconv"
 	"fmt"
@@ -71,7 +70,7 @@ func testAccCheckAlertExists(n string) resource.TestCheckFunc {
 
 var testAccCheckAlertConfig = `
 		provider "sysdig" {
-		  token = "ebf1f040-c8d7-4b0e-98c8-5c3e9aa23015"
+		  token = "XXXXXXXXXXXXXXXXXXXXXX"
 		}
 		resource "sysdig_alert" "foo" {
 			name = "foo"

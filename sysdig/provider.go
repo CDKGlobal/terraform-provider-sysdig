@@ -3,8 +3,8 @@ package sysdig
 import (
   "github.com/hashicorp/terraform/helper/schema"
   "github.com/hashicorp/terraform/terraform"
-  sysdig "github.com/jgensler8/go-sysdig"
-	"fmt"
+  sysdig "github.com/CDKGlobal/go-sysdig"
+  "fmt"
   "log"
 
 )

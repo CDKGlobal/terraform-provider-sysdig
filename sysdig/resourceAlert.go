@@ -2,7 +2,7 @@ package sysdig
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/jgensler8/go-sysdig"
+	"github.com/CDKGlobal/go-sysdig"
 	"log"
 	"fmt"
 	"github.com/tidwall/gjson"
@@ -18,7 +18,6 @@ func resourceAlert() *schema.Resource {
 			"alert_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
-				ForceNew: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
