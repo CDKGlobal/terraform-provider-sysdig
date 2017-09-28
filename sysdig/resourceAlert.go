@@ -18,6 +18,7 @@ func resourceAlert() *schema.Resource {
 			"alert_id": {
 				Type:     schema.TypeInt,
 				Computed: true,
+				ForceNew: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
