@@ -1,7 +1,7 @@
 # terraform-provider-sysdig_v1.0.0
 Terraform provider for sysdig. Uses the package: https://github.com/CDKGlobal/go-sysdig
 
-** Create an alert in Sysdig: **
+**Create an alert in Sysdig**
 
 ```
 provider "sysdig" {
@@ -28,7 +28,7 @@ auto-generate it for you.
 
 
 
-** Run tests **
+**Run tests**
 
 Step 1: You will need to add the sysdig token to the config file in the resourceAlert_test.go file
 
