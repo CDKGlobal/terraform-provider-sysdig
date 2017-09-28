@@ -1,5 +1,6 @@
 # terraform-provider-sysdig
 Terraform provider for sysdig. Uses the package: https://github.com/CDKGlobal/go-sysdig
+
 This provider can be extended to implement users, events, dashboards and other resources in sysdig.
 
 
@@ -61,7 +62,6 @@ Step 2: From within the sysdig directory, use the following command:
 go test -v
 
 ```
-
 
 Note: Acceptance tests create real resources, and often cost money to run.
 
