@@ -3,7 +3,7 @@ package sysdig
 import (
   "github.com/hashicorp/terraform/helper/schema"
   "github.com/hashicorp/terraform/terraform"
-  sysdig "github.com/CDKGlobal/go-sysdig"
+  "github.com/CDKGlobal/go-sysdig/generated"
   "fmt"
   "log"
 
@@ -28,12 +28,14 @@ func Provider() terraform.ResourceProvider {
 
 func configureProvider(d *schema.ResourceData) (interface{}, error) {
     token := d.Get("token").(string)
-    configuration := sysdig.NewConfiguration()
+    configuration := swagger.NewConfiguration()
 
-  	configuration.APIKeyPrefix["Authorization"] = fmt.Sprintf("Bearer %s", token)
+    configuration.DefaultHeader["Authorization"] = fmt.Sprintf("Bearer %s", token)
 
-  	api := sysdig.NewDefaultApi()
-  	api.Configuration = configuration
+  	//configuration.APIKeyPrefix["Authorization"] = fmt.Sprintf("Bearer %s", token)
+  	api := swagger.NewAPIClient(configuration)
+
+  	//api.Configuration = configuration
 
     log.Println("[INFO] Initializing sysdig client")
     return api,nil

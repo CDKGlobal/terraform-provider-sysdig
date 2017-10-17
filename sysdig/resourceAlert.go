@@ -2,10 +2,11 @@ package sysdig
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/CDKGlobal/go-sysdig"
+	"github.com/CDKGlobal/go-sysdig/generated"
 	"log"
 	"fmt"
-	"github.com/tidwall/gjson"
+	"context"
+	"strconv"
 )
 
 func resourceAlert() *schema.Resource {
@@ -28,7 +29,6 @@ func resourceAlert() *schema.Resource {
 			"type": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -45,7 +45,6 @@ func resourceAlert() *schema.Resource {
 			"condition": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"enabled": {
 				Type:     schema.TypeBool,
@@ -61,6 +60,15 @@ func resourceAlert() *schema.Resource {
 				Required: true,
 				Elem: &schema.Schema {Type : schema.TypeString},
 			},
+			"notificationchannelids" : {
+				Type: schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema {Type : schema.TypeInt},
+			},
+			"filter" : {
+				Type: schema.TypeString,
+				Required: true,
+			},
 
 
 		},
@@ -72,10 +80,11 @@ func resourceAlert() *schema.Resource {
 func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
 
 	log.Printf("****** We are in the create function ******")
-	api := meta.(*swagger.DefaultApi)
+	api := meta.(*swagger.APIClient).DefaultApi
+
 
 	alertInput := swagger.AlertInput{
-		Alert : swagger.Alert{
+		Alert : &swagger.Alert{
 			Name : d.Get("name").(string),
 			Type_ : d.Get("type").(string),
 			Severity : int32(d.Get("severity").(int)),
@@ -83,23 +92,25 @@ func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
 			Enabled : d.Get("enabled").(bool),
 			Condition : d.Get("condition").(string),
 			Timespan : int64(d.Get("timespan").(int)),
-			SegmentCondition :  swagger.SegmentCondition{Type_: "ANY"},
+			SegmentCondition :  &swagger.SegmentCondition{Type_: "ANY"},
 			SegmentBy:  []string{ "host.mac"},
-
+			NotificationChannelIds: []int64 {8227, 8611},
+			Filter: d.Get("filter").(string),
 		},
 	}
 
-	alert,alertresponse, err := api.CreateAlert(alertInput)
+	alert,alertresponse, err := api.CreateAlert(context.Background(),alertInput)
+	log.Printf("This is what the alertresponse is %v", alertresponse)
 
-	log.Printf("The alert created: %s",alert)
+	log.Printf("The alert created: %s",alert.Alert)
 	if err != nil {
 		return fmt.Errorf("error creating alert: %s", err.Error())
 	}
-
+	d.SetId(strconv.Itoa(int(alert.Alert.Id)))
 	d.Set("alert_id",alert.Alert.Id)
-	d.SetId(gjson.GetBytes(alertresponse.Payload,"alert.name").String());
-
 	log.Printf("This is what the ID is %v", d.Get("alert_id"))
+	log.Printf("This is what the name is %s", d.Get("name"))
+
 
 	return  nil
 
@@ -107,11 +118,11 @@ func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAlertRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("****** We are in the read function ******")
 
-	api := meta.(*swagger.DefaultApi)
+	api := meta.(*swagger.APIClient).DefaultApi
 
 	alert_id:= int64(d.Get("alert_id").(int))
 
-	alert,response, err := api.GetAlert(alert_id)
+	alert,response, err := api.GetAlert(context.Background(),alert_id)
 	log.Print(alert.Alert)
 
 	if err != nil {
@@ -127,6 +138,8 @@ func resourceAlertRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("condition",alert.Alert.Condition)
 	d.Set("enabled",alert.Alert.Enabled)
 	d.Set("severity",alert.Alert.Severity)
+	d.Set("filter", alert.Alert.Filter)
+	d.Set("notificationchannelids", alert.Alert.NotificationChannelIds)
 
 
 	return nil
@@ -136,11 +149,11 @@ func resourceAlertRead(d *schema.ResourceData, meta interface{}) error {
 func resourceAlertUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("****** We are in the update function ******")
 
-	api := meta.(*swagger.DefaultApi)
+	api := meta.(*swagger.APIClient).DefaultApi
 	alert_id:= int64(d.Get("alert_id").(int))
 
 	alertInput := swagger.AlertInput{
-		Alert : swagger.Alert{
+		Alert : &swagger.Alert{
 			Name : d.Get("name").(string),
 			Type_ : d.Get("type").(string),
 			Severity : int32(d.Get("severity").(int)),
@@ -148,14 +161,16 @@ func resourceAlertUpdate(d *schema.ResourceData, meta interface{}) error {
 			Enabled : d.Get("enabled").(bool),
 			Condition : d.Get("condition").(string),
 			Timespan : int64(d.Get("timespan").(int)),
-			SegmentCondition :  swagger.SegmentCondition{Type_: "ANY"},
+			SegmentCondition :  &swagger.SegmentCondition{Type_: "ANY"},
 			SegmentBy:  []string{ "host.mac"},
+			NotificationChannelIds: []int64 {8227, 8611},
+			Filter: d.Get("filter").(string),
 
 		},
 	}
-	alertinput,alertresponse, err := api.UpdateAlert(alert_id,alertInput)
+	alertinput,alertresponse, err := api.UpdateAlert(context.Background(),alert_id,alertInput)
 	log.Printf("%s",alertinput)
-	log.Printf("%s",alertresponse.Payload)
+	log.Printf("%s",alertresponse)
 	if err != nil {
 		return fmt.Errorf("error updating alert: %s", err.Error())
 	}
@@ -166,11 +181,11 @@ func resourceAlertUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAlertDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("****** We are in the delete function ******")
 
-	api := meta.(*swagger.DefaultApi)
+		api := meta.(*swagger.APIClient).DefaultApi
 		log.Printf("Before Deletion %v", d.State())
 		alert_id:= int64(d.Get("alert_id").(int))
 
-		_, err := api.DeleteAlert(int64(alert_id))
+		_, err := api.DeleteAlert(context.Background(),int64(alert_id))
 
 		log.Printf("After Deletion %v", d.State())
 
