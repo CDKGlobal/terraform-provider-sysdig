@@ -1,6 +1,6 @@
 provider "sysdig" {
 
-  token = "XXXXXXXXXX"
+  token = "Value of your sysdig token here"
 
 }
 resource "sysdig_alert" "foo" {
