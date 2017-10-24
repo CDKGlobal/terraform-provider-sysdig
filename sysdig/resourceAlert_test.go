@@ -31,7 +31,7 @@ func TestAccAlert_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"sysdig_alert.foo", "type", "MANUAL"),
 					resource.TestCheckResourceAttr(
-						"sysdig_alert.foo", "segmentcondition", "None"),
+						"sysdig_alert.foo", "segmentcondition", "ANY"),
 					resource.TestCheckResourceAttr(
 						"sysdig_alert.foo", "severity", "4"),
 					resource.TestCheckResourceAttr(
@@ -40,6 +40,10 @@ func TestAccAlert_Basic(t *testing.T) {
 						"sysdig_alert.foo", "timespan", "600000000"),
 					resource.TestCheckResourceAttr(
 						"sysdig_alert.foo", "segmentby.0", "host.mac"),
+					resource.TestCheckResourceAttr(
+						"sysdig_alert.foo", "notificationchannelids.0", "8227"),
+					resource.TestCheckResourceAttr(
+						"sysdig_alert.foo", "notificationchannelids.1", "8611"),
 				),
 			},
 		},
@@ -58,28 +62,33 @@ func testAccCheckAlertDestroy(s *terraform.State) error {
 
 
 var testAccCheckAlertConfig = `
-		provider "sysdig" {
-		  token = "XXXXXXXX"
-		}
-		resource "sysdig_alert" "foo" {
-			name = "foo"
-			description = "this is the provider"
-			enabled = true
-			severity = 4
-			condition = "timeAvg(cpu.used.percent) >= 95"
-			timespan = 600000000
-			type = "MANUAL"
-			segmentcondition = "None"
-			segmentby = ["host.mac"]
-			filter = "agent.tag.location='prod-pdx'"
-			notificationchannelids =[8227,8611]
-	  }
+			provider "sysdig" {
+
+			  token = "XXXXXXXXXX"
+
+			}
+			resource "sysdig_alert" "foo" {
+			  name = "foo"
+			  description = "this is the provider"
+			  enabled = true
+			  severity = 4
+			  condition = "timeAvg(cpu.used.percent) >= 95"
+			  timespan = 600000000
+			  type = "MANUAL"
+			  segmentcondition = "ANY"
+			  segmentby = ["host.mac"]
+			  filter = "agent.tag.location='prod1-pdx'"
+			  notificationchannelids = [8227,8611]
+			}
 	  `
 func alertDestroyHelper(s *terraform.State, api *swagger.DefaultApiService) error {
 	log.Printf("****** Destroy Helper is called ******")
 
 	for _, r := range s.RootModule().Resources {
-		id, _:= strconv.Atoi(r.Primary.Attributes["alert_id"])
+		id, iderr:= strconv.Atoi(r.Primary.Attributes["alert_id"])
+		if iderr != nil {
+			log.Printf("There was an error fetching the alert_id %v", iderr.Error())
+		}
 		log.Printf("ID in destroy helper %v", id)
 
 		alert,response, err := api.GetAlert(context.Background(),int64(id))
@@ -89,9 +98,11 @@ func alertDestroyHelper(s *terraform.State, api *swagger.DefaultApiService) erro
 
 		if err != nil {
 			if strings.Contains(err.Error(), "unexpected end of JSON input") {
+				log.Printf("******The alert has been deleted succesfully******")
 				continue
 			}
 			if strings.Contains(err.Error(), "404 Not Found") {
+				log.Printf("******The alert has been deleted succesfully******")
 				continue
 			}
 		}
@@ -102,9 +113,7 @@ func alertDestroyHelper(s *terraform.State, api *swagger.DefaultApiService) erro
 
 
 		 if alert.Alert.Name != "" {
-
 			 return fmt.Errorf("The alert still exists or this might be some lingering alert")
-
 
 		 }
 	}
