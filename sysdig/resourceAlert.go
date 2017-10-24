@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"context"
 	"strconv"
+	"strings"
+
 )
 
 func resourceAlert() *schema.Resource {
@@ -203,6 +205,9 @@ func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
 
 	alert,alertresponse, err := api.CreateAlert(context.Background(),alertInput)
 	if err != nil {
+		if strings.Contains(err.Error(), "422 Unprocessable Entity") {
+			return fmt.Errorf("****** Looks like an alert with the same name already exists in this sysdig account. Names need to be unique ******")
+		}
 		return fmt.Errorf("error creating alert: %s", err.Error())
 	}
 	log.Printf("This is what the alertresponse is %v", alertresponse)
