@@ -16,11 +16,6 @@ func resourceAlert() *schema.Resource {
 		Update: resourceAlertUpdate,
 		Delete: resourceAlertDelete,
 		Schema: map[string]*schema.Schema{
-			"alert_id": {
-				Type:     schema.TypeInt,
-				Computed: true,
-				ForceNew: true,
-			},
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -50,6 +45,10 @@ func resourceAlert() *schema.Resource {
 				Type:     schema.TypeBool,
 				Required: true,
 			},
+			"autocreated": {
+				Type:     schema.TypeBool,
+				Computed: true,
+			},
 			"segmentcondition": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -69,12 +68,96 @@ func resourceAlert() *schema.Resource {
 				Type: schema.TypeString,
 				Required: true,
 			},
-
+			"version" : {
+				Type: schema.TypeInt,
+				Computed: true,
+			},
+			"teamid" : {
+				Type: schema.TypeInt,
+				Computed: true,
+			},
+			"createdon" : {
+				Type: schema.TypeInt,
+				Computed: true,
+			},
+			"modifiedon" : {
+				Type: schema.TypeInt,
+				Computed: true,
+			},
+			"alert_id": {
+				Type:     schema.TypeInt,
+				Computed: true,
+				ForceNew: true,
+			},
 
 		},
 	}
 }
 
+//building the alert construct
+func buildAlertStruct(d *schema.ResourceData) *swagger.Alert {
+
+	var alert swagger.Alert
+	if attr, ok := d.GetOk("name"); ok {
+		alert.Name=attr.(string)
+	}
+	if attr, ok := d.GetOk("type"); ok {
+		alert.Type_=attr.(string)
+	}
+	if attr, ok := d.GetOk("severity"); ok {
+		alert.Severity= (int32)(attr.(int))
+	}
+	if attr, ok := d.GetOk("version"); ok {
+		alert.Version= (int32)(attr.(int))
+	}
+	if attr, ok := d.GetOk("description"); ok {
+		alert.Description=attr.(string)
+	}
+	if attr, ok := d.GetOk("enabled"); ok {
+		alert.Enabled=attr.(bool)
+	}
+	if attr, ok := d.GetOk("autocreated"); ok {
+		alert.AutoCreated=attr.(bool)
+	}
+	if attr, ok := d.GetOk("timespan"); ok {
+		alert.Timespan=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("teamid"); ok {
+		alert.TeamId=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("createdon"); ok {
+		alert.CreatedOn=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("modifiedon"); ok {
+		alert.ModifiedOn=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("condition"); ok {
+		alert.Condition= attr.(string)
+	}
+
+	if attr, ok := d.GetOk("segmentcondition"); ok {
+		alert.SegmentCondition = &swagger.SegmentCondition{
+			Type_: attr.(string),
+		}
+	}
+
+	if attr, ok := d.GetOk("filter"); ok {
+		alert.Filter=attr.(string)
+	}
+	segmentby := []string{}
+	for _, s := range d.Get("segmentby").([]interface{}) {
+		segmentby = append(segmentby, s.(string))
+	}
+	alert.SegmentBy = segmentby
+
+	notificationchannelids := []int64{}
+	for _, s := range d.Get("notificationchannelids").([]interface{}) {
+		notificationchannelids = append(notificationchannelids,(int64)(s.(int)))
+	}
+	alert.NotificationChannelIds = notificationchannelids
+
+	return &alert
+}
 // Define the CRUD functions - Create, Read, Update and Delete
 
 func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
@@ -82,32 +165,21 @@ func resourceAlertCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("****** We are in the create function ******")
 	api := meta.(*swagger.APIClient).DefaultApi
 
+	alertInput := swagger.AlertInput{buildAlertStruct(d)}
 
-	alertInput := swagger.AlertInput{
-		Alert : &swagger.Alert{
-			Name : d.Get("name").(string),
-			Type_ : d.Get("type").(string),
-			Severity : int32(d.Get("severity").(int)),
-			Description : d.Get("description").(string),
-			Enabled : d.Get("enabled").(bool),
-			Condition : d.Get("condition").(string),
-			Timespan : int64(d.Get("timespan").(int)),
-			SegmentCondition :  &swagger.SegmentCondition{Type_: "ANY"},
-			SegmentBy:  []string{ "host.mac"},
-			NotificationChannelIds: []int64 {8227, 8611},
-			Filter: d.Get("filter").(string),
-		},
-	}
+	log.Printf("This is what the generated alert is %v", alertInput.Alert)
 
 	alert,alertresponse, err := api.CreateAlert(context.Background(),alertInput)
-	log.Printf("This is what the alertresponse is %v", alertresponse)
-
-	log.Printf("The alert created: %s",alert.Alert)
 	if err != nil {
 		return fmt.Errorf("error creating alert: %s", err.Error())
 	}
+	log.Printf("This is what the alertresponse is %v", alertresponse)
+
+	log.Printf("The alert created: %v",alert.Alert)
+
 	d.SetId(strconv.Itoa(int(alert.Alert.Id)))
 	d.Set("alert_id",alert.Alert.Id)
+	d.Set("version",alert.Alert.Version)
 	log.Printf("This is what the ID is %v", d.Get("alert_id"))
 	log.Printf("This is what the name is %s", d.Get("name"))
 
@@ -138,7 +210,11 @@ func resourceAlertRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("condition",alert.Alert.Condition)
 	d.Set("enabled",alert.Alert.Enabled)
 	d.Set("severity",alert.Alert.Severity)
+	d.Set("version", alert.Alert.Version)
 	d.Set("filter", alert.Alert.Filter)
+	//d.Set("teamid",alert.Alert.TeamId)
+	//d.Set("createdon",alert.Alert.CreatedOn)
+	//d.Set("modifiedon",alert.Alert.ModifiedOn)
 	d.Set("notificationchannelids", alert.Alert.NotificationChannelIds)
 
 
@@ -149,28 +225,78 @@ func resourceAlertRead(d *schema.ResourceData, meta interface{}) error {
 func resourceAlertUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("****** We are in the update function ******")
 
+	var alert swagger.Alert
+
 	api := meta.(*swagger.APIClient).DefaultApi
-	alert_id:= int64(d.Get("alert_id").(int))
 
-	alertInput := swagger.AlertInput{
-		Alert : &swagger.Alert{
-			Name : d.Get("name").(string),
-			Type_ : d.Get("type").(string),
-			Severity : int32(d.Get("severity").(int)),
-			Description : d.Get("description").(string),
-			Enabled : d.Get("enabled").(bool),
-			Condition : d.Get("condition").(string),
-			Timespan : int64(d.Get("timespan").(int)),
-			SegmentCondition :  &swagger.SegmentCondition{Type_: "ANY"},
-			SegmentBy:  []string{ "host.mac"},
-			NotificationChannelIds: []int64 {8227, 8611},
-			Filter: d.Get("filter").(string),
-
-		},
+	if attr, ok := d.GetOk("alert_id"); ok {
+		alert.Id=(int64)(attr.(int))
 	}
-	alertinput,alertresponse, err := api.UpdateAlert(context.Background(),alert_id,alertInput)
-	log.Printf("%s",alertinput)
-	log.Printf("%s",alertresponse)
+	if attr, ok := d.GetOk("name"); ok {
+		alert.Name=attr.(string)
+	}
+	if attr, ok := d.GetOk("type"); ok {
+		alert.Type_=attr.(string)
+	}
+	if attr, ok := d.GetOk("severity"); ok {
+		alert.Severity= (int32)(attr.(int))
+	}
+	if attr, ok := d.GetOk("version"); ok {
+		alert.Version = (int32)(attr.(int))
+	}
+	if attr, ok := d.GetOk("description"); ok {
+		alert.Description=attr.(string)
+	}
+	if attr, ok := d.GetOk("enabled"); ok {
+		alert.Enabled=attr.(bool)
+	}
+	if attr, ok := d.GetOk("autocreated"); ok {
+		alert.AutoCreated=attr.(bool)
+	}
+	if attr, ok := d.GetOk("timespan"); ok {
+		alert.Timespan=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("condition"); ok {
+		alert.Condition= attr.(string)
+	}
+	if attr, ok := d.GetOk("teamid"); ok {
+		alert.TeamId=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("createdon"); ok {
+		alert.CreatedOn=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("modifiedon"); ok {
+		alert.ModifiedOn=(int64)(attr.(int))
+	}
+	if attr, ok := d.GetOk("segmentcondition"); ok {
+		alert.SegmentCondition = &swagger.SegmentCondition{
+			Type_: attr.(string),
+		}
+	}
+
+	if attr, ok := d.GetOk("filter"); ok {
+		alert.Filter=attr.(string)
+	}
+	segmentby := []string{}
+	for _, s := range d.Get("segmentby").([]interface{}) {
+		segmentby = append(segmentby, s.(string))
+	}
+	alert.SegmentBy = segmentby
+
+	notificationchannelids := []int64{}
+	for _, s := range d.Get("notificationchannelids").([]interface{}) {
+		notificationchannelids = append(notificationchannelids,(int64)(s.(int)))
+	}
+	alert.NotificationChannelIds = notificationchannelids
+	log.Printf("Alert in update : %v",alert)
+
+	alertInput := swagger.AlertInput{buildAlertStruct(d)}
+	log.Printf("Alertinput in update : %v",alertInput.Alert)
+	log.Printf("Updating alert with id: %v",alert.Id)
+
+	alertinput,alertresponse, err := api.UpdateAlert(context.Background(),alert.Id,alertInput)
+	log.Printf("%v",alertinput)
+	log.Printf("%v",alertresponse)
 	if err != nil {
 		return fmt.Errorf("error updating alert: %s", err.Error())
 	}

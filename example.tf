@@ -1,17 +1,18 @@
 provider "sysdig" {
 
-  token = "Value of your token here"
+  token = "XXXXXXXXXX"
 
 }
 resource "sysdig_alert" "foo" {
   name = "foo"
   description = "this is the provider"
-  enabled = false
+  enabled = true
   severity = 7
   condition = "timeAvg(cpu.used.percent) >= 95"
   timespan = 600000000
   type = "MANUAL"
-  segmentcondition = "None"
-  segmentby = ["host.hostname", "host.mac"]
+  segmentcondition = "ANY"
+  segmentby = ["host.mac"]
   filter = "agent.tag.location='prod1-pdx'"
+  notificationchannelids = [8227,8611]
 }
